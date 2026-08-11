@@ -9,6 +9,7 @@ interface Evento {
   descripcion: string | null;
   juego: string;
   fecha_inicio: string;
+  hora: string | null;
   capacidad: number | null;
 }
 
@@ -126,7 +127,12 @@ export default function CalendarioPage() {
                 const capacidad = evento.capacidad || 8;
                 const semaforo = obtenerColorSemaforo(registrados, capacidad);
                 const porcentaje = Math.round((registrados / capacidad) * 100);
-                const eventoFinalizado = new Date(evento.fecha_inicio) < new Date();
+                const fechaEvento = new Date(evento.fecha_inicio);
+                if (evento.hora) {
+                  const [horas, minutos] = evento.hora.split(':').map(Number);
+                  fechaEvento.setHours(horas, minutos, 0, 0);
+                }
+                const eventoFinalizado = fechaEvento < new Date();
 
                 return (
                   <div key={evento.id} className={`bg-slate-700/30 p-4 rounded-lg border ${eventoFinalizado ? 'border-slate-700/50 opacity-75' : 'border-slate-600'}`}>
