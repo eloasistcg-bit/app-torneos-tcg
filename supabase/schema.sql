@@ -69,28 +69,38 @@ DROP POLICY IF EXISTS "Eventos lectura publica" ON public.eventos;
 CREATE POLICY "Eventos lectura publica" ON public.eventos
   FOR SELECT USING (true);
 
--- Jugadores: cualquier persona puede insertar (para registro público)
+-- Jugadores: cualquier persona puede insertar/leer (para registro público)
 ALTER TABLE public.jugadores ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Jugadores insert publico" ON public.jugadores;
 CREATE POLICY "Jugadores insert publico" ON public.jugadores
   FOR INSERT WITH CHECK (true);
 
--- Jugadores: lectura pública (para verificar duplicados en registro)
 DROP POLICY IF EXISTS "Jugadores lectura publica" ON public.jugadores;
 CREATE POLICY "Jugadores lectura publica" ON public.jugadores
   FOR SELECT USING (true);
 
--- evento_jugadores: cualquier persona puede insertar
+-- evento_jugadores: cualquier persona puede insertar/leer
 ALTER TABLE public.evento_jugadores ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Evento jugadores insert" ON public.evento_jugadores;
 CREATE POLICY "Evento jugadores insert" ON public.evento_jugadores
   FOR INSERT WITH CHECK (true);
 
--- Inscripciones: cualquier persona puede insertar
+DROP POLICY IF EXISTS "Evento jugadores lectura" ON public.evento_jugadores;
+CREATE POLICY "Evento jugadores lectura" ON public.evento_jugadores
+  FOR SELECT USING (true);
+-- Inscripciones: cualquier persona puede insertar/leer/eliminar
 ALTER TABLE public.inscripciones ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Inscripciones insert publico" ON public.inscripciones;
 CREATE POLICY "Inscripciones insert publico" ON public.inscripciones
   FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Inscripciones lectura publica" ON public.inscripciones;
+CREATE POLICY "Inscripciones lectura publica" ON public.inscripciones
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Inscripciones delete publico" ON public.inscripciones;
+CREATE POLICY "Inscripciones delete publico" ON public.inscripciones
+  FOR DELETE USING (true);
 
 -- ============================================
 -- ÍNDICES PARA BÚSQUEDA RÁPIDA
