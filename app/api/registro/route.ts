@@ -6,9 +6,17 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { nombre, correo, juego, playerId, eventoId } = body
 
-    if (!nombre || !correo || !juego || !playerId || !eventoId) {
+    const esPokemon = juego === 'Pokémon'
+    if (!nombre || !correo || !juego || !eventoId) {
       return NextResponse.json(
         { error: 'Todos los campos son obligatorios' },
+        { status: 400 }
+      )
+    }
+
+    if (esPokemon && !playerId) {
+      return NextResponse.json(
+        { error: 'El Player ID es obligatorio para Pokémon' },
         { status: 400 }
       )
     }
@@ -23,31 +31,52 @@ export async function POST(request: Request) {
 
     if (errorBuscar) {
       console.error('Error al buscar jugador:', errorBuscar)
-      return NextResponse.json(
-        { error: 'No se pudo completar la inscripción' },
-        { status: 500 }
-      )
-    }
+        return NextResponse.json(
+          { error: 'No se pudo completar la inscripción' },
+          { status: 500 }
+        )
+      }
 
     let jugadorId: number | undefined
 
     if (jugadorExistente) {
       jugadorId = jugadorExistente.id
     } else {
+      const datosJugador: Record<string, unknown> = {
+        nombre,
+        correo,
+        juego,
+      }
+      if (playerId) {
+        datosJugador.player_id = playerId
+      }
+
       const { data: jugadorNuevo, error: errorInsertar } = await supabase
         .from('jugadores')
-        .insert([{ nombre, correo, juego, player_id: playerId }])
-        .select()
-        .single()
+        .insert([datosJugador])
+      .select()
+      .single()
 
       if (errorInsertar) {
         console.error('Error al insertar jugador:', errorInsertar)
-        return NextResponse.json(
-          { error: 'No se pudo completar la inscripción' },
-          { status: 500 }
-        )
+        if (errorInsertar.code === '23505') {
+          const { data: existente } = await supabase
+            .from('jugadores')
+            .select('id')
+            .eq('correo', correo)
+            .eq('juego', juego)
+            .maybeSingle()
+          if (existente) jugadorId = existente.id
+  }
+        if (!jugadorId) {
+    return NextResponse.json(
+            { error: 'No se pudo completar la inscripción' },
+            { status: 500 }
+    )
+        }
+      } else {
+        jugadorId = jugadorNuevo.id
       }
-      jugadorId = jugadorNuevo.id
     }
 
     // 2) Crear relación evento_jugadores (si no existe)
@@ -57,21 +86,23 @@ export async function POST(request: Request) {
         .upsert(
           { evento_id: eventoId, jugador_id: jugadorId },
           { onConflict: 'evento_id,jugador_id', ignoreDuplicates: true }
-        )
-    }
+    )
+}
 
     // 3) Registrar inscripción
+    const datosInscripcion: Record<string, unknown> = {
+      nombre,
+      correo,
+      juego,
+      evento_id: eventoId,
+}
+    if (playerId) {
+      datosInscripcion.player_id = playerId
+    }
+
     const { data, error } = await supabase
       .from('inscripciones')
-      .insert([
-        {
-          nombre,
-          correo,
-          juego,
-          player_id: playerId,
-          evento_id: eventoId,
-        },
-      ])
+      .insert([datosInscripcion])
       .select()
       .single()
 
@@ -79,9 +110,9 @@ export async function POST(request: Request) {
       console.error('Error al insertar en Supabase:', error)
       return NextResponse.json(
         { error: 'No se pudo completar la inscripción' },
-        { status: 500 }
-      )
-    }
+      { status: 500 }
+    )
+  }
 
     return NextResponse.json(
       { mensaje: 'Inscripción exitosa', inscripcion: data },
@@ -92,5 +123,6 @@ export async function POST(request: Request) {
       { error: 'Error al procesar la solicitud' },
       { status: 500 }
     )
-  }
 }
+}
+
