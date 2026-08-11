@@ -127,7 +127,8 @@ export default function CalendarioPage() {
                 const capacidad = evento.capacidad || 8;
                 const semaforo = obtenerColorSemaforo(registrados, capacidad);
                 const porcentaje = Math.round((registrados / capacidad) * 100);
-                const fechaEvento = new Date(evento.fecha_inicio);
+                const [anio, mes, dia] = evento.fecha_inicio.split('T')[0].split('-').map(Number);
+                const fechaEvento = new Date(anio, mes - 1, dia);
                 if (evento.hora) {
                   const [horas, minutos] = evento.hora.split(':').map(Number);
                   fechaEvento.setHours(horas, minutos, 0, 0);
