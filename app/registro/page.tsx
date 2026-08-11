@@ -1,7 +1,8 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 function RegistroForm() {
   const router = useRouter();
@@ -9,11 +10,30 @@ function RegistroForm() {
   const eventoIdParam = searchParams.get('evento') || '1';
 
   const [juego, setJuego] = useState<'Pokémon' | 'Magic'>('Pokémon');
+  const [eventoTitulo, setEventoTitulo] = useState('');
+  const [cargandoEvento, setCargandoEvento] = useState(true);
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [playerId, setPlayerId] = useState('');
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
+
+  useEffect(() => {
+    async function cargarEvento() {
+      const { data, error } = await supabase
+        .from('eventos')
+        .select('titulo, juego')
+        .eq('id', parseInt(eventoIdParam))
+        .single();
+
+      if (!error && data) {
+        setEventoTitulo(data.titulo);
+        setJuego(data.juego === 'Magic' ? 'Magic' : 'Pokémon');
+      }
+      setCargandoEvento(false);
+    }
+    cargarEvento();
+  }, [eventoIdParam]);
 
   const manejarEnvio = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +69,11 @@ function RegistroForm() {
           <Image src="/logo.png" alt="El Oasis TCG" width={80} height={80} className="w-20 h-20 rounded-full mx-auto mb-2 border-2 border-blue-500" />
           <h1 className="text-2xl font-bold">Registro de Torneo</h1>
           <p className="text-xs text-slate-400">El Oasis TCG</p>
+          {cargandoEvento ? (
+            <p className="text-sm text-slate-400 mt-2">Cargando evento...</p>
+          ) : (
+            <p className="text-sm text-blue-300 mt-2 font-medium">📅 {eventoTitulo}</p>
+          )}
         </div>
 
         {mensaje.texto && (
@@ -59,11 +84,16 @@ function RegistroForm() {
 
         <form onSubmit={manejarEnvio} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Selecciona el Juego</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Juego del Torneo</label>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setJuego('Pokémon')} className={`py-2 rounded-lg font-semibold border transition ${juego === 'Pokémon' ? 'bg-yellow-500 text-slate-950 border-yellow-500' : 'border-slate-600 text-slate-400'}`}>Pokémon TCG</button>
-              <button type="button" onClick={() => setJuego('Magic')} className={`py-2 rounded-lg font-semibold border transition ${juego === 'Magic' ? 'bg-purple-600 text-white border-purple-600' : 'border-slate-600 text-slate-400'}`}>Magic TCG</button>
+              <button type="button" disabled className={`py-2 rounded-lg font-semibold border transition ${
+                juego === 'Pokémon' ? 'bg-yellow-500 text-slate-950 border-yellow-500' : 'border-slate-600 text-slate-500'
+              }`}>Pokémon TCG</button>
+              <button type="button" disabled className={`py-2 rounded-lg font-semibold border transition ${
+                juego === 'Magic' ? 'bg-purple-600 text-white border-purple-600' : 'border-slate-600 text-slate-500'
+              }`}>Magic TCG</button>
             </div>
+            <p className="text-xs text-slate-500 mt-1">El juego de este torneo está fijado y no se puede cambiar.</p>
           </div>
 
           <div>
