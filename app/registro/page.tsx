@@ -1,6 +1,7 @@
 'use client';
 import { useState, Suspense, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -41,10 +42,22 @@ function RegistroForm() {
     setMensaje({ texto: '', tipo: '' });
 
     try {
+      // Para Magic, playerId NO se envía (solo nombre + correo)
+      const esPokemon = juego === 'Pokémon';
+      const body: Record<string, unknown> = {
+        nombre,
+        correo,
+        juego,
+        eventoId: parseInt(eventoIdParam),
+      };
+      if (esPokemon && playerId) {
+        body.playerId = playerId;
+      }
+
       const res = await fetch('/api/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, correo, juego, playerId, eventoId: parseInt(eventoIdParam) })
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -61,6 +74,8 @@ function RegistroForm() {
       setCargando(false);
     }
   };
+
+  const esPokemon = juego === 'Pokémon';
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8 flex items-center justify-center">
@@ -87,10 +102,10 @@ function RegistroForm() {
             <label className="block text-sm font-medium text-slate-400 mb-2">Juego del Torneo</label>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" disabled className={`py-2 rounded-lg font-semibold border transition ${
-                juego === 'Pokémon' ? 'bg-yellow-500 text-slate-950 border-yellow-500' : 'border-slate-600 text-slate-500'
+                esPokemon ? 'bg-yellow-500 text-slate-950 border-yellow-500' : 'border-slate-600 text-slate-500'
               }`}>Pokémon TCG</button>
               <button type="button" disabled className={`py-2 rounded-lg font-semibold border transition ${
-                juego === 'Magic' ? 'bg-purple-600 text-white border-purple-600' : 'border-slate-600 text-slate-500'
+                !esPokemon ? 'bg-purple-600 text-white border-purple-600' : 'border-slate-600 text-slate-500'
               }`}>Magic TCG</button>
             </div>
             <p className="text-xs text-slate-500 mt-1">El juego de este torneo está fijado y no se puede cambiar.</p>
@@ -106,14 +121,22 @@ function RegistroForm() {
             <input type="email" required value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="correo@ejemplo.com" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500" />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">{juego === 'Pokémon' ? 'Pokémon Player ID' : 'ID Cuenta Wizards (Correo)'}</label>
-            <input type="text" required value={playerId} onChange={(e) => setPlayerId(e.target.value)} placeholder={juego === 'Pokémon' ? 'Ej. 7654321' : 'Ej. correo@wizards.com'} className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500" />
-          </div>
+          {esPokemon && (
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">Pokémon Player ID</label>
+              <input type="text" required value={playerId} onChange={(e) => setPlayerId(e.target.value)} placeholder="Ej. 7654321" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500" />
+            </div>
+          )}
 
           <button type="submit" disabled={cargando} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 py-3 rounded-lg font-bold transition mt-2 shadow-lg">
             {cargando ? 'Inscribiendo...' : 'Confirmar Inscripción'}
           </button>
+
+          <div className="text-center pt-2">
+            <Link href="/" className="text-sm text-slate-400 hover:text-white transition">
+              ← Volver al calendario
+            </Link>
+          </div>
         </form>
       </div>
     </div>
