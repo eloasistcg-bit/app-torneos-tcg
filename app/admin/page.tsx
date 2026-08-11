@@ -543,7 +543,6 @@ export default function AdminPage() {
                                 <div className="flex-1 h-2 bg-slate-600/50 rounded-full overflow-hidden">
                                   <div className={`h-full rounded-full transition-all duration-500 ${semaforo.colorBarra}`} style={{ width: `${Math.min(porcentaje, 100)}%` }} />
                                 </div>
-                                <span className="text-xs text-slate-500">{porcentaje}%</span>
                               </div>
                             );
                           })()}

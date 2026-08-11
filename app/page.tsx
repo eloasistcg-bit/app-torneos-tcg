@@ -163,7 +163,7 @@ export default function CalendarioPage() {
                         <div className="mt-3">
                           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                             <span>Capacidad</span>
-                            <span>{registrados}/{capacidad} · {porcentaje}%</span>
+                            <span>{registrados}/{capacidad}</span>
                           </div>
                           <div className="w-full h-2 bg-slate-600/50 rounded-full overflow-hidden">
                             <div 
