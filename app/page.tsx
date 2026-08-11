@@ -126,9 +126,10 @@ export default function CalendarioPage() {
                 const capacidad = evento.capacidad || 8;
                 const semaforo = obtenerColorSemaforo(registrados, capacidad);
                 const porcentaje = Math.round((registrados / capacidad) * 100);
+                const eventoFinalizado = new Date(evento.fecha_inicio) < new Date();
 
                 return (
-                  <div key={evento.id} className="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+                  <div key={evento.id} className={`bg-slate-700/30 p-4 rounded-lg border ${eventoFinalizado ? 'border-slate-700/50 opacity-75' : 'border-slate-600'}`}>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -136,14 +137,21 @@ export default function CalendarioPage() {
                             evento.juego === 'Pokémon' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-purple-500/20 text-purple-400'
                           }`}>{evento.juego}</span>
                           
-                          {/* Semáforo de capacidad */}
-                          <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full border ${semaforo.fondo}`}>
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${semaforo.color}`}></span>
-                              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${semaforo.color}`}></span>
+                          {eventoFinalizado ? (
+                            /* Evento finalizado */
+                            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full border bg-slate-500/20 text-slate-400 border-slate-500/50">
+                              ⚪ Finalizado
                             </span>
-                            {semaforo.emoji} {semaforo.texto} · {registrados}/{capacidad}
-                          </span>
+                          ) : (
+                            /* Semáforo de capacidad */
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full border ${semaforo.fondo}`}>
+                              <span className="relative flex h-2.5 w-2.5">
+                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${semaforo.color}`}></span>
+                                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${semaforo.color}`}></span>
+                              </span>
+                              {semaforo.emoji} {semaforo.texto} · {registrados}/{capacidad}
+                            </span>
+                          )}
                         </div>
                         
                         <h3 className="text-lg font-bold">{evento.titulo}</h3>
@@ -157,30 +165,39 @@ export default function CalendarioPage() {
                         
                         <p className="text-sm text-slate-400 mt-1">
                           📅 {new Date(evento.fecha_inicio).toLocaleDateString()}
+                          {!eventoFinalizado && <span className="text-slate-500"> · Próximamente</span>}
                         </p>
 
-                        {/* Barra de progreso */}
-                        <div className="mt-3">
-                          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                            <span>Capacidad</span>
-                            <span>{registrados}/{capacidad}</span>
+                        {/* Barra de progreso (solo si no ha finalizado) */}
+                        {!eventoFinalizado && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                              <span>Capacidad</span>
+                              <span>{registrados}/{capacidad}</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-600/50 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all duration-500 ${semaforo.color}`}
+                                style={{ width: `${Math.min(porcentaje, 100)}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="w-full h-2 bg-slate-600/50 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full transition-all duration-500 ${semaforo.color}`}
-                              style={{ width: `${Math.min(porcentaje, 100)}%` }}
-                            />
-                          </div>
-                        </div>
+                        )}
                       </div>
                       
                       <div className="ml-4 flex flex-col items-end gap-2">
-                        <span className="text-xs text-slate-400 whitespace-nowrap">
-                          {registrados > 0 ? `${registrados} inscritos` : 'Sin inscritos'}
-                        </span>
-                        <a href={`/registro?evento=${evento.id}`} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-md text-sm transition">
-                          Inscribirse
-                        </a>
+                        {eventoFinalizado ? (
+                          <span className="text-xs text-slate-500 whitespace-nowrap">✅ Realizado</span>
+                        ) : (
+                          <>
+                            <span className="text-xs text-slate-400 whitespace-nowrap">
+                              {registrados > 0 ? `${registrados} inscritos` : 'Sin inscritos'}
+                            </span>
+                            <a href={`/registro?evento=${evento.id}`} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-md text-sm transition">
+                              Inscribirse
+                            </a>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
