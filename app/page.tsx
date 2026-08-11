@@ -194,15 +194,14 @@ export default function CalendarioPage() {
         <div className="mt-4 bg-slate-800/60 rounded-lg p-3 border border-slate-700 flex items-center justify-center gap-4 text-xs text-slate-400">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
-            Disponible (0-49%)
+            Disponible
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span>
-            Más de la mitad (50-74%)
+            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span>Más de la mitad
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
-            ¡Casi lleno! (75-100%)
+            ¡Casi lleno!
           </span>
         </div>
       </div>
