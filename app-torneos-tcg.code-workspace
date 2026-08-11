@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../eloasistcg-game/Public"
+		},
+		{
+			"path": "../IA/App/files"
+		}
+	],
+	"settings": {}
+}
