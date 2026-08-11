@@ -29,8 +29,8 @@ interface Evento {
 }
 
 interface JugadorRow extends Jugador {
-  evento_titulo: string;
-  evento_fecha: string;
+  evento_ids: number[];
+  eventos: { titulo: string; fecha_inicio: string }[];
 }
 
 export default function AdminJugadoresPage() {
@@ -59,12 +59,14 @@ export default function AdminJugadoresPage() {
 
         const filas: JugadorRow[] = (jugadoresRes.data || []).map((j: Jugador) => {
           const inscripciones = eventoJugadores.filter((ej: EventoJugador) => ej.jugador_id === j.id);
-          const eventoInfo = inscripciones.length > 0 ? mapaEventos.get(inscripciones[0].evento_id) : null;
+          const eventosDelJugador = inscripciones
+            .map((ej: EventoJugador) => mapaEventos.get(ej.evento_id))
+            .filter((e: Evento | undefined): e is Evento => Boolean(e));
           
           return {
             ...j,
-            evento_titulo: eventoInfo?.titulo || 'Sin evento',
-            evento_fecha: eventoInfo?.fecha_inicio || '',
+            evento_ids: inscripciones.map((ej: EventoJugador) => ej.evento_id),
+            eventos: eventosDelJugador.map(e => ({ titulo: e.titulo, fecha_inicio: e.fecha_inicio })),
           };
         });
         
@@ -79,10 +81,8 @@ export default function AdminJugadoresPage() {
     let filtrados = jugadores;
     
     if (filtroEvento !== 'todos') {
-      filtrados = filtrados.filter(j => {
-        const inscripciones = j.id; // será reemplazado por la lógica de eventos
-        return true;
-      });
+      const eventoId = parseInt(filtroEvento);
+      filtrados = filtrados.filter(j => j.evento_ids.includes(eventoId));
     }
     
     if (filtroJuego !== 'todos') {
@@ -189,7 +189,7 @@ export default function AdminJugadoresPage() {
                     <th className="px-4 py-3">Jugador</th>
                     <th className="px-4 py-3">Juego</th>
                     <th className="px-4 py-3">Player ID</th>
-                    <th className="px-4 py-3">Evento</th>
+                    <th className="px-4 py-3">Eventos</th>
                     <th className="px-4 py-3">Registrado</th>
                     <th className="px-4 py-3">Acciones</th>
                   </tr>
@@ -207,7 +207,19 @@ export default function AdminJugadoresPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm font-mono">{j.player_id || '—'}</td>
-                      <td className="px-4 py-3 text-sm">{j.evento_titulo}</td>
+                      <td className="px-4 py-3">
+                        {j.eventos.length === 0 ? (
+                          <span className="text-sm text-slate-500">Sin eventos</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {j.eventos.map((e, idx) => (
+                              <span key={idx} className="inline-block bg-slate-700/60 border border-slate-600 rounded px-1.5 py-0.5 text-xs">
+                                {e.titulo}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm">
                         {j.creado_en ? new Date(j.creado_en).toLocaleDateString('es-MX') : '—'}
                       </td>
