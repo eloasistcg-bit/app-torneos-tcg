@@ -28,6 +28,34 @@ interface Inscripcion {
   created_at: string;
 }
 
+// Función para calcular color del semáforo basado en llenado
+function obtenerColorSemaforo(registrados: number, capacidad: number): { colorBarra: string; colorPastilla: string; texto: string; emoji: string } {
+  const porcentaje = (registrados / capacidad) * 100;
+  
+  if (porcentaje >= 75) {
+    return { 
+      colorBarra: 'bg-red-500', 
+      colorPastilla: 'bg-red-500/20 text-red-400 border-red-500/50', 
+      texto: '¡Casi lleno!', 
+      emoji: '🔴' 
+    };
+  } else if (porcentaje >= 50) {
+    return { 
+      colorBarra: 'bg-yellow-500', 
+      colorPastilla: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50', 
+      texto: 'Más de la mitad', 
+      emoji: '🟡' 
+    };
+  } else {
+    return { 
+      colorBarra: 'bg-green-500', 
+      colorPastilla: 'bg-green-500/20 text-green-400 border-green-500/50', 
+      texto: 'Disponible', 
+      emoji: '🟢' 
+    };
+  }
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -497,9 +525,29 @@ export default function AdminPage() {
                           📅 {new Date(evento.fecha_inicio).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
                           {evento.hora && ` · 🕐 ${evento.hora}`}
                         </p>
-                        {evento.capacidad && (
-                          <p className="text-xs text-slate-500">👥 Capacidad: {evento.capacidad}</p>
+                        {evento.descripcion && (
+                          <p className="text-xs text-slate-400 italic mt-1">📋 {evento.descripcion}</p>
                         )}
+                        <div className="mt-2">
+                          {(() => {
+                            const registrados = inscripcionesPorEvento[evento.id]?.length || 0;
+                            const capacidad = evento.capacidad || 8;
+                            const semaforo = obtenerColorSemaforo(registrados, capacidad);
+                            const porcentaje = Math.round((registrados / capacidad) * 100);
+                            return (
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full border ${semaforo.colorPastilla}`}>
+                                  {semaforo.emoji} {semaforo.texto}
+                                </span>
+                                <span className="text-xs text-slate-400 whitespace-nowrap">{registrados}/{capacidad}</span>
+                                <div className="flex-1 h-2 bg-slate-600/50 rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full transition-all duration-500 ${semaforo.colorBarra}`} style={{ width: `${Math.min(porcentaje, 100)}%` }} />
+                                </div>
+                                <span className="text-xs text-slate-500">{porcentaje}%</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2">
                         <button
