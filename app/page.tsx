@@ -6,13 +6,32 @@ import { supabase } from '@/lib/supabase';
 interface Evento {
   id: number;
   titulo: string;
+  descripcion: string | null;
   juego: string;
   fecha_inicio: string;
+  capacidad: number | null;
+}
+
+// Función para calcular color del semáforo basado en llenado
+function obtenerColorSemaforo(registrados: number, capacidad: number): { color: string; fondo: string; texto: string; emoji: string } {
+  const porcentaje = (registrados / capacidad) * 100;
+  
+  if (porcentaje >= 75) {
+    // ROJO - casi lleno (75% - 100%)
+    return { color: 'bg-red-500', fondo: 'bg-red-500/20 text-red-400 border-red-500/50', texto: '¡Casi lleno!', emoji: '🔴' };
+  } else if (porcentaje >= 50) {
+    // AMARILLO - medio (50% - 74%)
+    return { color: 'bg-yellow-500', fondo: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50', texto: 'Más de la mitad', emoji: '🟡' };
+  } else {
+    // VERDE - disponible (0% - 49%)
+    return { color: 'bg-green-500', fondo: 'bg-green-500/20 text-green-400 border-green-500/50', texto: 'Disponible', emoji: '🟢' };
+  }
 }
 
 export default function CalendarioPage() {
   const [filtro, setFiltro] = useState<'Día' | 'Semana' | 'Mes'>('Mes');
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [inscripcionesPorEvento, setInscripcionesPorEvento] = useState<Record<number, number>>({});
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -36,8 +55,23 @@ export default function CalendarioPage() {
         query = query.gte('fecha_inicio', inicioMes).lte('fecha_inicio', finMes);
       }
 
-      const { data } = await query;
-      setEventos(data || []);
+      const { data: eventosData } = await query;
+      
+      if (eventosData) {
+        // Obtener conteo de inscripciones para todos los eventos
+        const { data: inscripcionesData } = await supabase
+          .from('inscripciones')
+          .select('evento_id');
+
+        const conteo: Record<number, number> = {};
+        (inscripcionesData || []).forEach((ins) => {
+          conteo[ins.evento_id] = (conteo[ins.evento_id] || 0) + 1;
+        });
+        
+        setInscripcionesPorEvento(conteo);
+        setEventos(eventosData);
+      }
+      
       setCargando(false);
     }
     obtenerEventos();
@@ -61,9 +95,9 @@ export default function CalendarioPage() {
               ⚙️
             </a>
             <a href="/registro" className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition shadow-lg">
-                    Inscribirse
-                  </a>
-                </div>
+              Inscribirse
+            </a>
+          </div>
         </header>
 
         <div className="flex space-x-2 mb-6 bg-slate-800 p-1.5 rounded-lg w-fit border border-slate-700">
@@ -87,25 +121,91 @@ export default function CalendarioPage() {
             <p className="text-slate-400 text-center py-8">No hay eventos para este periodo.</p>
           ) : (
             <div className="space-y-4">
-              {eventos.map((evento) => (
-                <div key={evento.id} className="flex justify-between items-center bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-                  <div>
-                    <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded mb-2 ${
-                      evento.juego === 'Pokémon' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-purple-500/20 text-purple-400'
-                    }`}>{evento.juego}</span>
-                    <h3 className="text-lg font-bold">{evento.titulo}</h3>
-                    <p className="text-sm text-slate-400">Fecha: {new Date(evento.fecha_inicio).toLocaleDateString()}</p>
+              {eventos.map((evento) => {
+                const registrados = inscripcionesPorEvento[evento.id] || 0;
+                const capacidad = evento.capacidad || 8;
+                const semaforo = obtenerColorSemaforo(registrados, capacidad);
+                const porcentaje = Math.round((registrados / capacidad) * 100);
+
+                return (
+                  <div key={evento.id} className="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded ${
+                            evento.juego === 'Pokémon' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-purple-500/20 text-purple-400'
+                          }`}>{evento.juego}</span>
+                          
+                          {/* Semáforo de capacidad */}
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full border ${semaforo.fondo}`}>
+                            <span className="relative flex h-2.5 w-2.5">
+                              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${semaforo.color}`}></span>
+                              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${semaforo.color}`}></span>
+                            </span>
+                            {semaforo.emoji} {semaforo.texto} · {registrados}/{capacidad}
+                          </span>
+                        </div>
+                        
+                        <h3 className="text-lg font-bold">{evento.titulo}</h3>
+                        
+                        {/* Descripción del evento */}
+                        {evento.descripcion && (
+                          <p className="text-sm text-slate-300 mt-1 italic">
+                            📋 {evento.descripcion}
+                          </p>
+                        )}
+                        
+                        <p className="text-sm text-slate-400 mt-1">
+                          📅 {new Date(evento.fecha_inicio).toLocaleDateString()}
+                        </p>
+
+                        {/* Barra de progreso */}
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                            <span>Capacidad</span>
+                            <span>{registrados}/{capacidad} · {porcentaje}%</span>
+                          </div>
+                          <div className="w-full h-2 bg-slate-600/50 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ${semaforo.color}`}
+                              style={{ width: `${Math.min(porcentaje, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-4 flex flex-col items-end gap-2">
+                        <span className="text-xs text-slate-400 whitespace-nowrap">
+                          {registrados > 0 ? `${registrados} inscritos` : 'Sin inscritos'}
+                        </span>
+                        <a href={`/registro?evento=${evento.id}`} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-md text-sm transition">
+                          Inscribirse
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                  <a href={`/registro?evento=${evento.id}`} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-md text-sm transition">
-                    Inscribirse
-                  </a>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
+        </div>
+
+        {/* Leyenda del semáforo */}
+        <div className="mt-4 bg-slate-800/60 rounded-lg p-3 border border-slate-700 flex items-center justify-center gap-4 text-xs text-slate-400">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+            Disponible (0-49%)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span>
+            Más de la mitad (50-74%)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+            ¡Casi lleno! (75-100%)
+          </span>
         </div>
       </div>
     </div>
   );
 }
-
